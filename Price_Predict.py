@@ -11,19 +11,13 @@ from datetime import datetime
 import warnings
 warnings.filterwarnings('ignore')
 from pandas.plotting import register_matplotlib_converters
-from statsmodels.tsa.stattools import acf, pacf
 from statsmodels.tsa.arima.model import ARIMA
 register_matplotlib_converters()
-from time import time
-import statistics
-from pmdarima import auto_arima
-from sklearn.metrics import  mean_squared_error
 from prophet import Prophet
-from prophet.plot import add_changepoints_to_plot
 from statsmodels.tsa.stattools import adfuller
 import plotly.express as px
-import plotly.graph_objects as go
 from PIL import Image
+
 
 #Load style
 with open('style.css') as f:
@@ -31,6 +25,7 @@ with open('style.css') as f:
 
 
 #Function
+@st.cache_data()
 def load_data():
 
     main_data = pd.read_csv("avocado.csv")
@@ -176,14 +171,22 @@ in_discrete = discrete
 
 #GUI
 with st.sidebar:
-    logo = Image.open('logo.jpg')
-    logo = logo.resize((400,400))
-    st.image(logo, width = 100)
+    with st.columns(3)[1]:
+        logo = Image.open('logo.jpg')
+        logo = logo.resize((400,400))
+        st.image(logo, width = 100)
 
 menu = ["Business Objective", "Regression", "Time Series","Choose Invest Area"]
 choice = st.sidebar.selectbox('Menu', menu)
 
+
 if choice == "Business Objective":
+    st.sidebar.write('''+ Đề tài : Hass Price Prediction''')
+    st.sidebar.write('''+ Giáo viên hướng dẫn : Cô Khuất Thuỳ Phương''')
+
+    st.sidebar.write('''+ Nhóm 8:
+    + Ngô Hoàng Nam
+    + Trần Thanh Vũ''')
 
     choice1 = st.selectbox('Sub Menu',['Overall and introduction','Explore Data Analysis'])
     if choice1 == 'Overall and introduction':
@@ -305,7 +308,11 @@ elif choice == 'Regression':
 elif choice == 'Time Series':
     choice3 = st.selectbox('Sub Menu',['Explore Data Analysis','Model Arima','Model FbProphet'])
     if choice3 == 'Explore Data Analysis':
-
+        st.sidebar.write('''+ Data EDA will be done follow these step: 
+        + 1.Overview 
+        + 2.Stationary test 
+        + 3.Decomposition''')
+        st.sidebar.write('''=> Data is stationary , has trending and seasoning properties.''')
         data['Date'] = data['Date'].astype('datetime64[ns]')
         data['region_type'] = data['region'] + '_' + data['type']
         data_organic = data[(data['region'] == 'California') & (data['type'] == 'organic')][['Date', 'AveragePrice']]
@@ -352,14 +359,48 @@ elif choice == 'Time Series':
 
 
     elif choice3 == 'Model Arima':
-        pass
+        st.sidebar.write("+ ARIMA rmse : 0.2777 and std :0.29 for conventional hass")
+        st.sidebar.write("+ ARIMA rmse : 0.193 and std :0.234 for conventional hass")
+        st.sidebar.write("+ Time take to predict 309 data point : 0.237s")
+        with st.form('My form'):
+            region = st.selectbox("Select area you want to predict:",data['region'].unique())
+            type = st.selectbox("Choose type of hass:",data['type'].unique())
+            month = int(st.number_input("Month you want to predict:",format = '%d',step = 1))
+            submited = st.form_submit_button('Sumited')
+        if (submited):
+            if month > 0:
+                data['Date'] = data['Date'].astype('datetime64[ns]')
+                data_predict = data[(data['region'] == region) & (data['type'] == type)][['Date','AveragePrice']]
+                data_predict.index = data_predict['Date']
+                data_predict = data_predict.drop('Date', axis=1)
+                data_predict = data_predict.sort_index()
+                model = ARIMA(data_predict, order=(1, 1, 1), seasonal_order=(1, 1, 0, 52))
+                model = model.fit()
+                forecast_data = model.forecast(month*4)
+                fig = px.scatter()
+                fig.add_scatter(x=forecast_data.index, y=forecast_data, name='Data predict')
+                fig.add_scatter(x=data_predict.index, y=data_predict['AveragePrice'], name='Data normal')
+                st.write('Line plot of {} Average Price:'.format(region))
+                st.write(fig)
+                if st.download_button(label="Download data as CSV",
+                                  data=forecast_data.to_csv().encode('utf-8'),
+                                  file_name='Price_predict.csv',
+                                  mime='text/csv'):
+                    st.write('Thanks for downloading!')
+
+            else :
+                st.write("Input suitable month")
+
     elif choice3 == 'Model FbProphet':
+        st.sidebar.write("+ ARIMA rmse : 0.269 and std :0.290 for conventional hass")
+        st.sidebar.write("+ ARIMA rmse : 0.218 and std :0.234 for conventional hass")
+        st.sidebar.write("+ Time take to predict 309 data point : 0.11s")
         with st.form('My form'):
             min_date = datetime(2018,1,1)
             upper_date = datetime(2018,6,1)
             region = st.selectbox("Select area you want to predict:",data['region'].unique())
             type = st.selectbox("Choose type of hass:",data['type'].unique())
-            date1 = st.date_input("Choose date you want to start predict:" , min_value = min_date)
+            date1 = st.date_input("Choose date you want to start predict:" , min_value = min_date,value = datetime(2018,1,1))
             date2 = st.date_input("Choose date you want to predict to:",min_value = upper_date)
             submited = st.form_submit_button('Sumited')
         if submited:
@@ -392,6 +433,11 @@ elif choice == 'Time Series':
                               mime='text/csv'):
                     st.write('Thanks for downloading!')
 if choice == "Choose Invest Area":
+    st.sidebar.write("+ To choose the suitable area. We will predict the price or revenue at 2017 and comepare with 2021"
+                     " to find suitable area to start invest")
+    st.sidebar.write("+ Model use is facebook prophet because the fast speed of the model")
+    st.sidebar.write("+ The region is contain some big region combine from other region, please choose the region suitable to"
+                     "your idea.")
     with st.form('My form'):
         area = st.multiselect("Choose Area want to compare:",data['region'].unique(),default = data['region'].unique())
         type = st.selectbox("Choose type of hass:",data['type'].unique())
