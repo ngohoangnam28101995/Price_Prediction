@@ -309,9 +309,9 @@ elif choice == 'Time Series':
     choice3 = st.selectbox('Sub Menu',['Explore Data Analysis','Model Arima','Model FbProphet'])
     if choice3 == 'Explore Data Analysis':
         st.sidebar.write('''+ Data EDA will be done follow these step: 
-        + 1.Overview 
-        + 2.Stationary test 
-        + 3.Decomposition''')
+    + 1.Overview 
+    + 2.Stationary test 
+    + 3.Decomposition''')
         st.sidebar.write('''=> Data is stationary , has trending and seasoning properties.''')
         data['Date'] = data['Date'].astype('datetime64[ns]')
         data['region_type'] = data['region'] + '_' + data['type']
