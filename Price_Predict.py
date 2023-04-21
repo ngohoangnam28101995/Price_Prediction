@@ -23,6 +23,7 @@ from prophet.plot import add_changepoints_to_plot
 from statsmodels.tsa.stattools import adfuller
 import plotly.express as px
 import plotly.graph_objects as go
+from PIL import Image
 
 #Load style
 with open('style.css') as f:
@@ -174,6 +175,11 @@ in_discrete = discrete
 
 
 #GUI
+with st.sidebar:
+    logo = Image.open('logo.jpg')
+    logo = logo.resize((400,400))
+    st.image(logo, width = 100)
+
 menu = ["Business Objective", "Regression", "Time Series","Choose Invest Area"]
 choice = st.sidebar.selectbox('Menu', menu)
 
